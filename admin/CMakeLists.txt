@@ -1,0 +1,5 @@
+add_executable(labadmin main.c)
+target_link_libraries(labadmin PRIVATE lab_shared)
+if(WIN32)
+    target_link_libraries(labadmin PRIVATE ws2_32)
+endif()

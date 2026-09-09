@@ -1,0 +1,9 @@
+build/
+keys/shared.key
+*.obj
+*.exe
+*.pdb
+*.ilk
+.vs/
+CMakeFiles/
+CMakeCache.txt

@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "issued_at": 0,
+  "valid_until": 0,
+  "seq": 1,
+  "default_profile": "Aluno",
+  "reset_on_logoff": true,
+  "reset_timeout_min": 15,
+  "profiles": [
+    {
+      "name": "Aluno",
+      "blocked_apps": ["cmd.exe", "powershell.exe", "regedit.exe", "taskmgr.exe"],
+      "allowed_apps": ["notepad.exe", "msedge.exe", "chrome.exe"],
+      "reset_dirs": ["Desktop", "Downloads"],
+      "block_install": true,
+      "block_registry": false
+    },
+    {
+      "name": "Programacao",
+      "blocked_apps": ["cmd.exe", "powershell.exe", "regedit.exe"],
+      "allowed_apps": ["code.exe", "devenv.exe", "notepad.exe"],
+      "reset_dirs": ["Desktop", "Downloads"],
+      "block_install": true,
+      "block_registry": false
+    },
+    {
+      "name": "Redes",
+      "blocked_apps": ["regedit.exe"],
+      "allowed_apps": ["cmd.exe", "powershell.exe", "wireshark.exe", "putty.exe"],
+      "reset_dirs": ["Desktop", "Downloads", "Documents"],
+      "block_install": false,
+      "block_registry": false
+    }
+  ],
+  "schedules": [
+    {
+      "profile_id": "Aluno",
+      "start": "07:30",
+      "end": "12:00",
+      "days": [1, 2, 3, 4, 5]
+    },
+    {
+      "profile_id": "Programacao",
+      "start": "13:30",
+      "end": "17:30",
+      "days": [1, 2, 3, 4, 5]
+    },
+    {
+      "profile_id": "Redes",
+      "start": "18:00",
+      "end": "22:00",
+      "days": [2, 4]
+    }
+  ]
+}
