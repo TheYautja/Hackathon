@@ -69,6 +69,16 @@ Gera:
 .\build\admin\Release\labadmin.exe add lab-pc-01 192.168.1.50
 ```
 
+## Console gráfico de teste
+
+Com os binários compilados, abra a interface visual com:
+
+```powershell
+python scripts\gui.py
+```
+
+A GUI usa o `labadmin.exe` existente para descobrir agentes, consultar status, enviar a política, trocar perfil e disparar reset. O botão **Iniciar agente local** facilita o teste em uma única máquina.
+
 ## Funcionalidades implementadas
 
 - Políticas assinadas (HMAC-SHA256) com cache local em `C:\ProgramData\LabAgent\`
