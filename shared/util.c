@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 #endif
 
 static char g_data_dir[512];
@@ -57,25 +58,34 @@ uint64_t lab_now_unix(void)
 #endif
 }
 
-uint64_t lab_monotonic_sec(void)
-{
+
 #ifdef _WIN32
-    return (uint64_t)(GetTickCount64() / 1000ULL);
-#else
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (uint64_t)ts.tv_sec;
+
+    double lab_monotonic_sec(void)
+    {
+        return (double)GetTickCount64() / 1000.0;
+    }
+
+#else 
+    
+    double lab_monotonic_sec(void)
+    {
+        struct timespec ts;
+        if(clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return 0.0;
+        return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+    }
+
 #endif
-}
 
 void lab_sleep_ms(unsigned ms)
 {
-#ifdef _WIN32
-    Sleep(ms);
-#else
-    usleep(ms * 1000);
-#endif
+    #ifdef _WIN32
+        Sleep(ms);
+    #else
+        usleep(ms * 1000);
+    #endif
 }
+
 
 int lab_mkdir_p(const char *path)
 {
@@ -123,17 +133,7 @@ int lab_mkdir_p(const char *path)
     return 0;
 }
 
-//////////////////
-    snprintf(tmp, sizeof(tmp), "%s", path);
-    for (p = tmp + 1; *p; p++) {
-        if (*p == '\\' || *p == '/') {
-            *p = '\0';
-            mkdir(tmp, 0755);
-            *p = (*p == '\\') ? '\\' : '/';
-        }
-    }
-    return mkdir(tmp, 0755) == 0 || 1; /* ok if exists */
-}
+
 
 int lab_get_hostname(char *buf, size_t len)
 {
