@@ -3,6 +3,8 @@
 
 #include "protocol.h"
 #include <stdint.h>
+#include <stddef.h>
+#include <protocol.h>
 
 #define LAB_MAX_PROFILES    8
 #define LAB_MAX_SCHEDULES   8

@@ -61,14 +61,14 @@ uint64_t lab_now_unix(void)
 
 #ifdef _WIN32
 
-    double lab_monotonic_sec(void)
+    uint64_t lab_monotonic_sec(void)
     {
         return (double)GetTickCount64() / 1000.0;
     }
 
 #else 
     
-    double lab_monotonic_sec(void)
+    uint64_t lab_monotonic_sec(void)
     {
         struct timespec ts;
         if(clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return 0.0;
