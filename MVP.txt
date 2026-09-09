@@ -1,0 +1,11 @@
+O MVP será um sistema de orquestração de computadores compartilhados. O computador do administrador funcionará como controlador central, comunicando-se diretamente pela rede local com agentes instalados nos computadores gerenciados, sem depender de um servidor dedicado ou da nuvem.
+
+O administrador poderá criar papéis de uso, definir permissões e bloqueios e programar quando cada papel estará ativo. Os computadores poderão, por exemplo, alternar automaticamente entre os papéis de Aluno, Redes e Programação conforme o horário, além de permitir uma troca manual em um clique.
+
+Cada computador possuirá um agente desenvolvido em C, responsável por receber e armazenar as políticas localmente e aplicá-las ao sistema. Dessa forma, o computador continuará seguindo sua programação mesmo sem comunicação constante com o administrador.
+
+Além do controle de acesso, o sistema terá recuperação do ambiente. Ações que o usuário não deveria realizar serão bloqueadas, enquanto alterações permitidas poderão ser descartadas através da restauração do ambiente para um estado conhecido, preparando o computador para o próximo usuário.
+
+O MVP também contará com gerenciamento de múltiplos computadores e registro das principais alterações e transições.
+
+**Em resumo:** criar papéis → definir permissões → programar horários → aplicar nos PCs → alternar automaticamente → restaurar o ambiente se necessario.
