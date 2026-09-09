@@ -8,6 +8,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <sddl.h>
 
 static HANDLE g_ipc_thread = NULL;
 static volatile int g_ipc_running = 0;
@@ -73,12 +74,24 @@ static DWORD WINAPI ipc_thread(LPVOID unused)
     (void)unused;
 
     while (g_ipc_running) {
-        HANDLE pipe = CreateNamedPipeA(
-            LAB_IPC_PIPE_NAME,
-            PIPE_ACCESS_DUPLEX,
+        SECURITY_ATTRIBUTES security_attributes;
+        PSECURITY_DESCRIPTOR security_descriptor = NULL;
+        HANDLE pipe;
+
+        memset(&security_attributes, 0, sizeof(security_attributes));
+        security_attributes.nLength = sizeof(security_attributes);
+        if (!ConvertStringSecurityDescriptorToSecurityDescriptorA(
+                "D:P(A;;GA;;;SY)(A;;GA;;;BA)", SDDL_REVISION_1,
+                &security_descriptor, NULL)) {
+            Sleep(1000);
+            continue;
+        }
+        security_attributes.lpSecurityDescriptor = security_descriptor;
+        pipe = CreateNamedPipeA(
+            LAB_IPC_PIPE_NAME, PIPE_ACCESS_DUPLEX,
             PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
-            PIPE_UNLIMITED_INSTANCES,
-            4096, 4096, 0, NULL);
+            PIPE_UNLIMITED_INSTANCES, 4096, 4096, 0, &security_attributes);
+        LocalFree(security_descriptor);
 
         if (pipe == INVALID_HANDLE_VALUE) {
             Sleep(1000);

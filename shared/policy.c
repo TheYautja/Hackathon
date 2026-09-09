@@ -7,9 +7,14 @@
 #include <string.h>
 #ifdef _WIN32
 #include <windows.h>
+#include <sddl.h>
+#include <aclapi.h>
+#include <io.h>
 #else
 #include <strings.h>
 #include <time.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 static int parse_time_hhmm(const char *s, int *hour, int *minute)
@@ -279,14 +284,67 @@ int lab_policy_unseal(lab_policy_t *out, const lab_sealed_policy_t *sealed,
 
 int lab_policy_save_file(const lab_sealed_policy_t *sealed, const char *path)
 {
-    FILE *f = fopen(path, "wb");
+    char tmp_path[512];
+    FILE *f;
+
+    if (!sealed || !path)
+        return -1;
+
+#ifdef _WIN32
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp.%lu", path,
+             (unsigned long)GetCurrentProcessId());
+#else
+    snprintf(tmp_path, sizeof(tmp_path), "%s.tmp.%lu", path,
+             (unsigned long)getpid());
+#endif
+
+    f = fopen(tmp_path, "wb");
     if (!f)
         return -1;
     if (fwrite(sealed, sizeof(*sealed), 1, f) != 1) {
         fclose(f);
+        remove(tmp_path);
         return -1;
     }
+    fflush(f);
+#ifdef _WIN32
+    FlushFileBuffers((HANDLE)_get_osfhandle(_fileno(f)));
+#else
+    fsync(fileno(f));
+#endif
     fclose(f);
+
+#ifdef _WIN32
+    if (!MoveFileExA(tmp_path, path, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+        remove(tmp_path);
+        return -1;
+    }
+    {
+        PSECURITY_DESCRIPTOR sd = NULL;
+        PACL dacl = NULL;
+        BOOL dacl_present = FALSE;
+        BOOL dacl_defaulted = FALSE;
+        if (!ConvertStringSecurityDescriptorToSecurityDescriptorA(
+                "D:P(A;;FA;;;SY)(A;;FA;;;BA)", SDDL_REVISION_1, &sd, NULL))
+            return -1;
+        if (!GetSecurityDescriptorDacl(sd, &dacl_present, &dacl, &dacl_defaulted) ||
+            !dacl_present) {
+            LocalFree(sd);
+            return -1;
+        }
+        if (SetNamedSecurityInfoA((LPSTR)path, SE_FILE_OBJECT,
+                                  DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+                                  NULL, NULL, dacl, NULL) != ERROR_SUCCESS) {
+            LocalFree(sd);
+            return -1;
+        }
+        LocalFree(sd);
+    }
+#else
+    if (rename(tmp_path, path) != 0)
+        return -1;
+    chmod(path, S_IRUSR | S_IWUSR);
+#endif
     return 0;
 }
 

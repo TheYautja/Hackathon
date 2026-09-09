@@ -1,0 +1,7 @@
+C:\Users\User\Documents\GitHub\Hackathon1\agent\main.c;C:\Users\User\Documents\GitHub\Hackathon1\build-hackathon1\agent\labagent.dir\Release\main.obj
+C:\Users\User\Documents\GitHub\Hackathon1\agent\audit.c;C:\Users\User\Documents\GitHub\Hackathon1\build-hackathon1\agent\labagent.dir\Release\audit.obj
+C:\Users\User\Documents\GitHub\Hackathon1\agent\ipc.c;C:\Users\User\Documents\GitHub\Hackathon1\build-hackathon1\agent\labagent.dir\Release\ipc.obj
+C:\Users\User\Documents\GitHub\Hackathon1\agent\enforcement.c;C:\Users\User\Documents\GitHub\Hackathon1\build-hackathon1\agent\labagent.dir\Release\enforcement.obj
+C:\Users\User\Documents\GitHub\Hackathon1\agent\reset.c;C:\Users\User\Documents\GitHub\Hackathon1\build-hackathon1\agent\labagent.dir\Release\reset.obj
+C:\Users\User\Documents\GitHub\Hackathon1\agent\network.c;C:\Users\User\Documents\GitHub\Hackathon1\build-hackathon1\agent\labagent.dir\Release\network.obj
+C:\Users\User\Documents\GitHub\Hackathon1\agent\state.c;C:\Users\User\Documents\GitHub\Hackathon1\build-hackathon1\agent\labagent.dir\Release\state.obj

@@ -52,8 +52,17 @@ int lab_network_handle_push(const uint8_t *payload, uint32_t len)
     if (lab_policy_unseal(&policy, &sealed, st->hmac_key, sizeof(st->hmac_key)) != 0)
         return -1;
 
-    lab_policy_save_file(&sealed, lab_policy_path());
-    lab_state_apply_policy(&policy);
+    if (st->policy_loaded && sealed.seq <= st->policy_seq) {
+        lab_audit_log("POLICY_REJECT", "stale_seq=%llu current=%llu",
+                      (unsigned long long)sealed.seq,
+                      (unsigned long long)st->policy_seq);
+        return -1;
+    }
+
+    if (lab_policy_save_file(&sealed, lab_policy_path()) != 0)
+        return -1;
+    if (lab_state_apply_policy(&policy) != 0)
+        return -1;
     return 0;
 }
 

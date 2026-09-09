@@ -17,6 +17,17 @@ if (-not $cmake) {
     $cmake = $cmake.Source
 }
 
+$cache = Join-Path $build "CMakeCache.txt"
+if (Test-Path $cache) {
+    $cachedSource = Select-String -Path $cache -Pattern '^CMAKE_HOME_DIRECTORY:INTERNAL=(.*)$' |
+        Select-Object -First 1
+    if ($cachedSource -and $cachedSource.Matches[0].Groups[1].Value -ne $root) {
+        $build = Join-Path $root "build-local"
+        New-Item -ItemType Directory -Force -Path $build | Out-Null
+        Set-Location $build
+    }
+}
+
 & $cmake .. -DCMAKE_BUILD_TYPE=Release
 & $cmake --build . --config Release
 if ($LASTEXITCODE -ne 0) { throw "Build falhou com codigo $LASTEXITCODE" }
