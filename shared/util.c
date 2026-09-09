@@ -3,10 +3,12 @@
 #include <string.h>
 
 #ifdef _WIN32
+#define LAB_PATH_SEP '\\'
 #include <direct.h>
 #include <windows.h>
 #define mkdir(path, mode) _mkdir(path)
 #else
+#define LAB_PATH_SEP '/'
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -29,7 +31,7 @@ static void init_paths(void)
     const char *base = "/var/lib/labagent";
 #endif
 
-    snprintf(g_data_dir, sizeof(g_data_dir), "%s", base);
+    snprintf(g_data_dir, sizeof(g_data_dir), "%s%cdata", base, LAB_PATH_SEP);
     snprintf(g_baseline_dir, sizeof(g_baseline_dir), "%s\\baseline", base);
     snprintf(g_log_path, sizeof(g_log_path), "%s\\audit.log", base);
     snprintf(g_policy_path, sizeof(g_policy_path), "%s\\policy.sealed", base);
@@ -77,9 +79,51 @@ void lab_sleep_ms(unsigned ms)
 
 int lab_mkdir_p(const char *path)
 {
+    if(!path || !*path) return -1;
     char tmp[512];
-    char *p;
+    
+    //check if the buffer is large enough
+    if(strlen(path) >= sizeof(tmp)){
+        return -1;
+    }
+    
+    strcpy(tmp, path);
 
+    for(char *p = tmp + 1; *p; ++p){
+        #ifdef _WIN32
+            if(*p == '\\' || *p == '/')
+        #else 
+            if(*p == '/')
+        #endif
+            {
+                char saved = *p;
+                *p = '\0';
+                if(mkdir(tmp, 0755) != 0){
+                    #ifdef _WIN32
+                        if(getLastError() != ERROR_ALREADY_EXISTS)
+                            return -1;
+                    #else 
+                        if(errno != EEXIST)
+                            return -1;
+                    #endif
+                }
+                *p = saved;
+            }
+        }
+        if(mkdir(tmp, 0755) != 0)
+        {
+            #ifdef _WIN32
+                if(getLastError() != ERROR_ALREADY_EXISTS)
+                    return -1;
+            #else 
+                if(errno != EEXIST)
+                    return -1;
+            #endif
+        }
+    return 0;
+}
+
+//////////////////
     snprintf(tmp, sizeof(tmp), "%s", path);
     for (p = tmp + 1; *p; p++) {
         if (*p == '\\' || *p == '/') {
