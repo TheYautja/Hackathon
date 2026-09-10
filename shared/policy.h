@@ -52,7 +52,7 @@ typedef struct {
     uint64_t seq;
     uint8_t  payload_hash[LAB_HMAC_SIZE];
     uint8_t  signature[LAB_HMAC_SIZE];
-    char     json_payload[LAB_MAX_PAYLOAD];
+    char     json_payload[65536];
 } lab_sealed_policy_t;
 
 

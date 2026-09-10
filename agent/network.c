@@ -133,11 +133,9 @@ int lab_network_handle_push(const uint8_t *payload, uint32_t len)
         return -1;
     }
 
-    if (lab_policy_save_file(&sealed, lab_policy_path()) != 0)
-        return -1;
+    if (lab_policy_save_file(&sealed, lab_policy_path()) != 0) { lab_audit_log("POLICY_REJECT", "save_file failed"); return -1; }
 
-    if (lab_state_apply_policy(&policy) != 0)
-        return -1;
+    if (lab_state_apply_policy(&policy) != 0) { lab_audit_log("POLICY_REJECT", "apply_policy failed"); return -1; }
 
     return 0;
 }

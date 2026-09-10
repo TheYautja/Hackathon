@@ -749,10 +749,7 @@ static int cmd_push(
 
     } else {
 
-        printf(
-            "Resposta inesperada do agente %s\n",
-            agent->agent_id
-        );
+        printf("Resposta inesperada do agente %s: type=%u payload_len=%u\n", agent->agent_id, rhdr.type, rhdr.payload_len);
     }
 
     LAB_CLOSE_SOCKET(sock);
