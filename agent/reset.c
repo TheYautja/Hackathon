@@ -266,11 +266,13 @@ static int get_process_name(pid_t pid,
     return n > 0 ? 0 : -1;
 }
 
+
 static void kill_non_whitelist(void)
 {
     DIR *proc;
     struct dirent *entry;
     pid_t self = getpid();
+    uid_t my_uid = getuid();
 
     proc = opendir("/proc");
 
@@ -282,6 +284,10 @@ static void kill_non_whitelist(void)
         long value;
         pid_t pid;
         char name[256];
+        char status_path[64];
+        FILE *status;
+        char line[256];
+        uid_t process_uid = (uid_t)-1;
 
         if (entry->d_name[0] < '0' ||
             entry->d_name[0] > '9')
@@ -290,17 +296,40 @@ static void kill_non_whitelist(void)
         errno = 0;
         value = strtol(entry->d_name, &end, 10);
 
-        if (errno != 0 ||
-            *end != '\0' ||
-            value <= 0)
+        if (errno != 0 || *end != '\0' || value <= 0)
             continue;
 
         pid = (pid_t)value;
 
-        /*
-         * Never kill ourselves.
-         */
         if (pid == self)
+            continue;
+
+        /*
+         * Only inspect processes owned by the same
+         * user running the agent.
+         */
+        snprintf(status_path,
+                 sizeof(status_path),
+                 "/proc/%ld/status",
+                 (long)pid);
+
+        status = fopen(status_path, "r");
+
+        if (!status)
+            continue;
+
+        while (fgets(line, sizeof(line), status)) {
+            unsigned int uid;
+
+            if (sscanf(line, "Uid:\t%u", &uid) == 1) {
+                process_uid = (uid_t)uid;
+                break;
+            }
+        }
+
+        fclose(status);
+
+        if (process_uid != my_uid)
             continue;
 
         if (get_process_name(pid,
@@ -311,16 +340,7 @@ static void kill_non_whitelist(void)
         if (should_keep(name))
             continue;
 
-        /*
-         * Only request termination first.
-         * Do not use SIGKILL here so applications have
-         * a chance to clean themselves up.
-         */
         if (kill(pid, SIGTERM) != 0) {
-            /*
-             * Processes can disappear between /proc
-             * enumeration and kill().
-             */
             if (errno != ESRCH && errno != EPERM) {
                 lab_audit_log("RESET_KILL_FAILED",
                               "pid=%ld name=%s errno=%d",
@@ -333,6 +353,8 @@ static void kill_non_whitelist(void)
 
     closedir(proc);
 }
+
+
 
 static int path_join(char *out,
                      size_t out_len,
