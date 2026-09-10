@@ -202,42 +202,7 @@ static int recv_all(lab_socket_t sock, uint8_t *buf, size_t len)
 /* Protocol                                                                   */
 /* ------------------------------------------------------------------------- */
 
-static int send_msg(
-    lab_socket_t sock,
-    uint16_t type,
-    const uint8_t *payload,
-    uint32_t plen)
-{
-    lab_msg_header_t hdr;
-    uint8_t buf[LAB_MAX_PAYLOAD + 256];
-    size_t outlen;
-
-    lab_header_init(
-        &hdr,
-        type,
-        g_seq++,
-        NULL,
-        plen
-    );
-
-    lab_header_sign(
-        &hdr,
-        payload,
-        g_hmac_key,
-        sizeof(g_hmac_key)
-    );
-
-    if (lab_msg_pack(
-            buf,
-            sizeof(buf),
-            &hdr,
-            payload,
-            &outlen) != 0)
-        return -1;
-
-    return send_all(sock, buf, outlen);
-}
-
+static int send_msg(lab_socket_t sock,uint16_t type,const uint8_t *payload,uint32_t plen){lab_msg_header_t hdr;lab_header_init(&hdr,type,g_seq++,NULL,plen);lab_header_sign(&hdr,payload,g_hmac_key,sizeof(g_hmac_key));if(send_all(sock,(const uint8_t *)&hdr,sizeof(hdr))!=0)return -1;if(plen>0&&send_all(sock,payload,plen)!=0)return -1;return 0;}
 
 static int recv_msg(
     lab_socket_t sock,

@@ -44,6 +44,7 @@ typedef struct {
     int      reset_timeout_min;
 } lab_policy_t;
 
+
 typedef struct {
     uint32_t version;
     uint64_t issued_at;
@@ -53,6 +54,7 @@ typedef struct {
     uint8_t  signature[LAB_HMAC_SIZE];
     char     json_payload[LAB_MAX_PAYLOAD];
 } lab_sealed_policy_t;
+
 
 int  lab_policy_from_json(lab_policy_t *out, const char *json);
 int  lab_policy_to_json(const lab_policy_t *policy, char *buf, size_t buf_len);
