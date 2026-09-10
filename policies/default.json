@@ -9,7 +9,7 @@
   "profiles": [
     {
       "name": "Aluno",
-      "blocked_apps": ["cmd.exe", "powershell.exe", "regedit.exe", "taskmgr.exe"],
+      "blocked_apps": ["xterm", "mousepad", "thunar"],
       "allowed_apps": ["notepad.exe", "msedge.exe", "chrome.exe"],
       "reset_dirs": ["Desktop", "Downloads"],
       "block_install": true,

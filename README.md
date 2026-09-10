@@ -1,6 +1,6 @@
-# LabOrchestrator
+# S.C.A.C
 
-Sistema de orquestração de computadores compartilhados em LAN para laboratórios de ensino — **sem nuvem**, operação offline e agente local em C.
+Sistema de controle de acesso compartilhado
 
 ## Arquitetura
 
@@ -76,6 +76,8 @@ Com os binários compilados, abra a interface visual com:
 ```powershell
 python scripts\gui.py
 ```
+
+(exclusivo do windows)
 
 A GUI usa o `labadmin.exe` existente para descobrir agentes, consultar status, enviar a política, trocar perfil e disparar reset. O botão **Iniciar agente local** facilita o teste em uma única máquina.
 
