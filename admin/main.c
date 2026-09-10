@@ -37,6 +37,10 @@ typedef int lab_socket_t;
 #endif
 
 
+//so that find_agent can call it
+static int cmd_discover(int timeout_sec);
+
+
 typedef struct {
     char agent_id[LAB_MAX_HOSTNAME];
     char hostname[LAB_MAX_HOSTNAME];
@@ -581,65 +585,81 @@ static int cmd_discover(int timeout_sec)
 /* Agent lookup                                                              */
 /* ------------------------------------------------------------------------- */
 
+
 static discovered_agent_t *find_agent(const char *id)
 {
-    int i;
+int i;
+static discovered_agent_t direct_agent;
 
-    static discovered_agent_t direct_agent;
-
-    for (i = 0; i < g_agent_count; i++) {
-        if (strcmp(g_agents[i].agent_id, id) == 0 ||
-            strcmp(g_agents[i].hostname, id) == 0 ||
-            strcmp(g_agents[i].ip, id) == 0)
-            return &g_agents[i];
+/* Check agents discovered in this process. */
+for (i = 0; i < g_agent_count; i++) {
+    if (strcmp(g_agents[i].agent_id, id) == 0 ||
+        strcmp(g_agents[i].hostname, id) == 0 ||
+        strcmp(g_agents[i].ip, id) == 0) {
+        return &g_agents[i];
     }
-
-    /*
-     * Allow direct IP targets without running discover first.
-     */
-    {
-        struct in_addr address;
-
-        if (inet_pton(
-                AF_INET,
-                id,
-                &address) == 1) {
-
-            memset(
-                &direct_agent,
-                0,
-                sizeof(direct_agent)
-            );
-
-            snprintf(
-                direct_agent.agent_id,
-                sizeof(direct_agent.agent_id),
-                "%s",
-                id
-            );
-
-            snprintf(
-                direct_agent.hostname,
-                sizeof(direct_agent.hostname),
-                "%s",
-                id
-            );
-
-            snprintf(
-                direct_agent.ip,
-                sizeof(direct_agent.ip),
-                "%s",
-                id
-            );
-
-            direct_agent.port = LAB_TCP_PORT;
-
-            return &direct_agent;
-        }
-    }
-
-    return NULL;
 }
+
+/*
+ * Allow direct IP targets without discovery.
+ */
+{
+    struct in_addr address;
+
+    if (inet_pton(AF_INET, id, &address) == 1) {
+        memset(&direct_agent, 0, sizeof(direct_agent));
+
+        snprintf(
+            direct_agent.agent_id,
+            sizeof(direct_agent.agent_id),
+            "%s",
+            id
+        );
+
+        snprintf(
+            direct_agent.hostname,
+            sizeof(direct_agent.hostname),
+            "%s",
+            id
+        );
+
+        snprintf(
+            direct_agent.ip,
+            sizeof(direct_agent.ip),
+            "%s",
+            id
+        );
+
+        direct_agent.port = LAB_TCP_PORT;
+
+        return &direct_agent;
+    }
+}
+
+/*
+ * No cached agent. Run discovery automatically.
+ * This makes commands such as:
+ *
+ *   labadmin push TheYautja default.json
+ *
+ * work without requiring a separate "discover" command.
+ */
+if (cmd_discover(3) != 0)
+    return NULL;
+
+for (i = 0; i < g_agent_count; i++) {
+    if (strcmp(g_agents[i].agent_id, id) == 0 ||
+        strcmp(g_agents[i].hostname, id) == 0 ||
+        strcmp(g_agents[i].ip, id) == 0) {
+        return &g_agents[i];
+    }
+}
+
+return NULL;
+
+}
+
+
 
 
 /* ------------------------------------------------------------------------- */
