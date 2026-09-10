@@ -1,122 +1,128 @@
-# S.C.A.C
+# S.C.A.C.
 
-Sistema de controle de acesso compartilhado
+## Sistema de Controle de Acesso Compartilhado
 
-## Arquitetura
+O S.C.A.C. é uma solução para gerenciamento de computadores compartilhados em ambientes corporativos.
 
-```
-PC Administrador (labadmin)          PC Cliente (labagent)
-        |                                    |
-        |  UDP 7801 — discovery              |
-        |  TCP 7800 — comandos assinados       |
-        +------------------------------------+
-```
+Seu objetivo é permitir que equipes de TI definam, distribuam e mantenham políticas de utilização de forma centralizada, reduzindo tarefas manuais e mantendo os ambientes consistentes entre diferentes usuários e períodos de utilização.
 
-| Componente | Descrição |
-|---|---|
-| `labagent` | Serviço/daemon local: políticas, enforcement, reset, IPC |
-| `labadmin` | CLI do administrador: discovery, push, status, switch, reset |
-| `policies/` | Perfis JSON (Aluno, Programação, Redes) |
-| `keys/shared.key` | Chave HMAC compartilhada (32 bytes) |
+## O problema
 
-## Requisitos
+Computadores compartilhados são utilizados por diferentes pessoas, equipes e turnos. Sem um gerenciamento adequado, alterações realizadas durante uma utilização podem afetar o próximo usuário e aumentar o trabalho da equipe responsável pela infraestrutura.
 
-- Windows 10/11 (MVP prioritário)
-- CMake 3.16+
-- Visual Studio Build Tools ou MSVC
-- PowerShell
+Entre os problemas mais comuns estão:
 
-## Build
+* configurações inconsistentes;
+* utilização de aplicações inadequadas;
+* alterações não autorizadas;
+* necessidade de reconfiguração frequente;
+* tempo gasto na manutenção das estações;
+* dificuldade para restaurar o ambiente entre utilizações.
+
+## A proposta
+
+O S.C.A.C. permite definir **políticas compartilhadas** que representam como determinado ambiente deve funcionar.
+
+Essas políticas podem ser aplicadas a múltiplos computadores, permitindo que a equipe de TI gerencie o ambiente de forma centralizada.
+
+A abordagem é orientada ao **ambiente compartilhado**, e não somente ao usuário individual.
+
+Isso permite combinar gerenciamento de acesso, configuração, utilização e restauração em um único fluxo.
+
+## Principais recursos
+
+* Gerenciamento centralizado de computadores;
+* Políticas compartilhadas;
+* Perfis para diferentes ambientes e funções;
+* Controle de aplicações;
+* Agendamento de políticas;
+* Restauração de ambientes;
+* Registro de atividades;
+* Administração remota.
+
+## Casos de uso
+
+O S.C.A.C. pode ser utilizado em ambientes como:
+
+* estações compartilhadas;
+* salas de treinamento;
+* operações por turnos;
+* ambientes de atendimento;
+* laboratórios corporativos;
+* espaços de trabalho temporários;
+* computadores utilizados por diferentes equipes.
+
+## Por que políticas compartilhadas?
+
+Soluções tradicionais de gerenciamento geralmente são centradas no usuário, no dispositivo ou em uma tarefa específica.
+
+O S.C.A.C. utiliza uma abordagem baseada no **estado desejado do ambiente**.
+
+Em vez de configurar cada computador individualmente, a equipe de TI pode definir uma política e aplicá-la às máquinas que pertencem àquele ambiente.
+
+Isso facilita mudanças de configuração e reduz operações repetitivas.
+
+## Instalação
+
+O projeto atualmente está em desenvolvimento, com foco inicial em ambientes Windows.
+
+Requisitos:
+
+* Windows 10 ou superior;
+* CMake;
+* compilador compatível com o projeto;
+* PowerShell.
+
+Para compilar:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/build.ps1
 ```
 
-Gera:
-- `build/agent/Release/labagent.exe`
-- `build/admin/Release/labadmin.exe`
+## Utilização
 
-## Uso rápido (demo)
+Após a compilação, o administrador pode utilizar o cliente de gerenciamento para:
 
-**Terminal 1 — Agente (preferencialmente como Administrador):**
-
-```powershell
-.\build\agent\Release\labagent.exe --key keys\shared.key
+```text
+Descobrir computadores
+Enviar políticas
+Consultar status
+Alterar perfis
+Restaurar ambientes
 ```
 
-**Terminal 2 — Administrador:**
+Exemplo:
 
 ```powershell
-# Descobrir agentes na LAN
 .\build\admin\Release\labadmin.exe discover
+```
 
-# Enviar política
+```powershell
 .\build\admin\Release\labadmin.exe push DESKTOP-ABC policies\default.json
+```
 
-# Ver status
+```powershell
 .\build\admin\Release\labadmin.exe status DESKTOP-ABC
-
-# Trocar perfil manualmente
-.\build\admin\Release\labadmin.exe switch DESKTOP-ABC Programacao
-
-# Restaurar ambiente (baseline)
-.\build\admin\Release\labadmin.exe reset DESKTOP-ABC
 ```
 
-**Fallback sem discovery:**
+## Projeto
 
-```powershell
-.\build\admin\Release\labadmin.exe add lab-pc-01 192.168.1.50
-```
+O S.C.A.C. é desenvolvido como um projeto experimental para explorar uma abordagem mais simples e centralizada para o gerenciamento de ambientes computacionais compartilhados.
 
-## Console gráfico de teste
+O projeto encontra-se em estágio de MVP e está sujeito a mudanças conforme a validação da proposta e evolução do produto.
 
-Com os binários compilados, abra a interface visual com:
+## Contribuição
 
-```powershell
-python scripts\gui.py
-```
+Contribuições, sugestões e discussões são bem-vindas.
 
-(exclusivo do windows)
+Para contribuir:
 
-A GUI usa o `labadmin.exe` existente para descobrir agentes, consultar status, enviar a política, trocar perfil e disparar reset. O botão **Iniciar agente local** facilita o teste em uma única máquina.
-
-## Funcionalidades implementadas
-
-- Políticas assinadas (HMAC-SHA256) com cache local em `C:\ProgramData\LabAgent\`
-- Perfis dinâmicos com apps bloqueados/permitidos
-- Alternância automática por horário (schedules)
-- Discovery UDP broadcast + TCP assinado
-- Monitor de processos bloqueados (kill a cada 2s)
-- Reset de Desktop/Downloads via robocopy + baseline
-- Audit log em `C:\ProgramData\LabAgent\audit.log`
-- IPC via Named Pipe (`\\.\pipe\labagent`)
-
-## Estrutura do projeto
-
-```
-├── agent/          # Agente local (C)
-├── admin/          # CLI administrador (C)
-├── shared/         # Protocolo, políticas, crypto
-├── policies/       # Perfis JSON de exemplo
-├── scripts/        # build, genkeys, demo
-└── keys/           # Chave compartilhada (gerada localmente)
-```
-
-## Segurança
-
-- Políticas seladas: hash SHA-256 + assinatura HMAC
-- Mensagens LAN com HMAC por pacote + seq anti-replay básico
-- IPC autenticado via mesma chave
-- Dados em `C:\ProgramData\LabAgent\` (requer admin para instalação)
-
-## Limitações do MVP (hackathon)
-
-- Agente roda como console app (não Windows Service instalado)
-- Enforcement por kill de processos (não AppLocker/GPO)
-- Reset parcial (Desktop/Downloads), sem snapshot de disco
-- Usuário com privilégios de admin local pode desabilitar o agente
+1. Faça um fork do projeto.
+2. Crie uma branch para sua alteração.
+3. Implemente e teste suas mudanças.
+4. Abra um Pull Request descrevendo a alteração.
 
 ## Licença
 
-Projeto acadêmico — Hackathon.
+Projeto acadêmico desenvolvido para hackathon.
+
