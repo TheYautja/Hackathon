@@ -13,5 +13,5 @@ target_include_directories(lab_shared PUBLIC
 )
 
 if(WIN32)
-    target_link_libraries(lab_shared PUBLIC bcrypt ws2_32 advapi32)
+    target_link_libraries(lab_shared PUBLIC bcrypt advapi32)
 endif()

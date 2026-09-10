@@ -2,6 +2,7 @@
 #define LAB_PROTOCOL_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 #define LAB_MAGIC           0x4C414241u  /* "LABA" */
 #define LAB_PROTOCOL_VER    1
