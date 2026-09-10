@@ -7,3 +7,6 @@ keys/shared.key
 .vs/
 CMakeFiles/
 CMakeCache.txt
+build-local/
+build-hackathon1/
+keys/

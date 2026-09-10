@@ -2,6 +2,7 @@
 #define LAB_UTIL_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 uint64_t lab_now_unix(void);
 uint64_t lab_monotonic_sec(void);

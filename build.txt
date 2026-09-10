@@ -1,0 +1,83 @@
+$ErrorActionPreference = "Stop"
+$root = Split-Path -Parent $PSScriptRoot
+$keyDir = Join-Path $root "keys"
+$keyPath = Join-Path $keyDir "shared.key"
+
+New-Item -ItemType Directory -Force -Path $keyDir | Out-Null
+
+$key = New-Object byte[] 32
+[System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($key)
+[System.IO.File]::WriteAllBytes($keyPath, $key)
+
+Write-Host "Chave HMAC gerada: $keyPath"
+Write-Host "Distribua este arquivo para todos os agentes e para o PC administrador."
+$ErrorActionPreference = "Stop"
+$root = Split-Path -Parent $PSScriptRoot
+$build = Join-Path $root "build"
+
+if (-not (Test-Path (Join-Path $root "keys\shared.key"))) {
+    & (Join-Path $root "scripts\genkeys.ps1")
+}
+
+New-Item -ItemType Directory -Force -Path $build | Out-Null
+Set-Location $build
+
+$cmake = Get-Command cmake -ErrorAction SilentlyContinue
+if (-not $cmake) {
+    $vsCmake = "C:\Program Files\Microsoft Visual Studio\18\Insiders\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe"
+    if (Test-Path $vsCmake) { $cmake = $vsCmake } else { throw "CMake nao encontrado. Instale CMake ou Visual Studio com C++." }
+} else {
+    $cmake = $cmake.Source
+}
+
+$cache = Join-Path $build "CMakeCache.txt"
+if (Test-Path $cache) {
+    $cachedSource = Select-String -Path $cache -Pattern '^CMAKE_HOME_DIRECTORY:INTERNAL=(.*)$' |
+        Select-Object -First 1
+    if ($cachedSource -and $cachedSource.Matches[0].Groups[1].Value -ne $root) {
+        $build = Join-Path $root "build-local"
+        New-Item -ItemType Directory -Force -Path $build | Out-Null
+        Set-Location $build
+    }
+}
+
+& $cmake .. -DCMAKE_BUILD_TYPE=Release
+& $cmake --build . --config Release
+if ($LASTEXITCODE -ne 0) { throw "Build falhou com codigo $LASTEXITCODE" }
+
+$agentExe = Join-Path $build "agent\Release\labagent.exe"
+$adminExe = Join-Path $build "admin\Release\labadmin.exe"
+if (-not (Test-Path $agentExe) -or -not (Test-Path $adminExe)) {
+    throw "Binarios nao encontrados apos build."
+}
+
+Write-Host ""
+Write-Host "Binarios:"
+Write-Host "  $agentExe"
+Write-Host "  $adminExe"
+$ErrorActionPreference = "Stop"
+$root = Split-Path -Parent $PSScriptRoot
+$agent = Join-Path $root "build\agent\Release\labagent.exe"
+$admin = Join-Path $root "build\admin\Release\labadmin.exe"
+$policy = Join-Path $root "policies\default.json"
+
+if (-not (Test-Path $agent)) {
+    Write-Host "Execute primeiro: powershell scripts/build.ps1"
+    exit 1
+}
+
+Write-Host "=== Demo LabOrchestrator ==="
+Write-Host "1. Inicie o agente em outro terminal:"
+Write-Host "   $agent --key keys\shared.key"
+Write-Host ""
+Write-Host "2. Descobrir agentes:"
+Write-Host "   $admin discover"
+Write-Host ""
+Write-Host "3. Enviar politica:"
+Write-Host "   $admin push <AGENT_ID> $policy"
+Write-Host ""
+Write-Host "4. Trocar perfil:"
+Write-Host "   $admin switch <AGENT_ID> Programacao"
+Write-Host ""
+Write-Host "5. Disparar reset:"
+Write-Host "   $admin reset <AGENT_ID>"

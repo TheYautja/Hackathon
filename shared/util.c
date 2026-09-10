@@ -3,13 +3,16 @@
 #include <string.h>
 
 #ifdef _WIN32
+#define LAB_PATH_SEP '\\'
 #include <direct.h>
 #include <windows.h>
 #define mkdir(path, mode) _mkdir(path)
 #else
+#define LAB_PATH_SEP '/'
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 #endif
 
 static char g_data_dir[512];
@@ -29,7 +32,7 @@ static void init_paths(void)
     const char *base = "/var/lib/labagent";
 #endif
 
-    snprintf(g_data_dir, sizeof(g_data_dir), "%s", base);
+    snprintf(g_data_dir, sizeof(g_data_dir), "%s%cdata", base, LAB_PATH_SEP);
     snprintf(g_baseline_dir, sizeof(g_baseline_dir), "%s\\baseline", base);
     snprintf(g_log_path, sizeof(g_log_path), "%s\\audit.log", base);
     snprintf(g_policy_path, sizeof(g_policy_path), "%s\\policy.sealed", base);
@@ -55,41 +58,82 @@ uint64_t lab_now_unix(void)
 #endif
 }
 
-uint64_t lab_monotonic_sec(void)
-{
+
 #ifdef _WIN32
-    return (uint64_t)(GetTickCount64() / 1000ULL);
-#else
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return (uint64_t)ts.tv_sec;
+
+    uint64_t lab_monotonic_sec(void)
+    {
+        return (double)GetTickCount64() / 1000.0;
+    }
+
+#else 
+    
+    uint64_t lab_monotonic_sec(void)
+    {
+        struct timespec ts;
+        if(clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return 0.0;
+        return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
+    }
+
 #endif
-}
 
 void lab_sleep_ms(unsigned ms)
 {
-#ifdef _WIN32
-    Sleep(ms);
-#else
-    usleep(ms * 1000);
-#endif
+    #ifdef _WIN32
+        Sleep(ms);
+    #else
+        usleep(ms * 1000);
+    #endif
 }
+
 
 int lab_mkdir_p(const char *path)
 {
+    if(!path || !*path) return -1;
     char tmp[512];
-    char *p;
-
-    snprintf(tmp, sizeof(tmp), "%s", path);
-    for (p = tmp + 1; *p; p++) {
-        if (*p == '\\' || *p == '/') {
-            *p = '\0';
-            mkdir(tmp, 0755);
-            *p = (*p == '\\') ? '\\' : '/';
-        }
+    
+    //check if the buffer is large enough
+    if(strlen(path) >= sizeof(tmp)){
+        return -1;
     }
-    return mkdir(tmp, 0755) == 0 || 1; /* ok if exists */
+    
+    strcpy(tmp, path);
+
+    for(char *p = tmp + 1; *p; ++p){
+        #ifdef _WIN32
+            if(*p == '\\' || *p == '/')
+        #else 
+            if(*p == '/')
+        #endif
+            {
+                char saved = *p;
+                *p = '\0';
+                if(mkdir(tmp, 0755) != 0){
+                    #ifdef _WIN32
+                        if(getLastError() != ERROR_ALREADY_EXISTS)
+                            return -1;
+                    #else 
+                        if(errno != EEXIST)
+                            return -1;
+                    #endif
+                }
+                *p = saved;
+            }
+        }
+        if(mkdir(tmp, 0755) != 0)
+        {
+            #ifdef _WIN32
+                if(getLastError() != ERROR_ALREADY_EXISTS)
+                    return -1;
+            #else 
+                if(errno != EEXIST)
+                    return -1;
+            #endif
+        }
+    return 0;
 }
+
+
 
 int lab_get_hostname(char *buf, size_t len)
 {
